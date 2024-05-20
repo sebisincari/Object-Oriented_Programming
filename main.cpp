@@ -25,12 +25,17 @@ class coordonate
         ~coordonate();
 };
 
+class RegionNotFoundException : public runtime_error {
+    public:
+        RegionNotFoundException(const string& regionName) : runtime_error("Regiunea " + regionName + " nu a fost găsită") {}
+};
 
 
 class graphStrategy{
     public:
         virtual void addRoad(string city1, string city2, coordonate a,coordonate b) = 0;
         virtual void getDistance(string city1, string city2) = 0;
+        virtual string& getRegionName() = 0;
 };
 
 class unorientedGraphStrategy: public graphStrategy{
@@ -40,11 +45,13 @@ class unorientedGraphStrategy: public graphStrategy{
         vector<string> citiesName;
         unordered_map<string,int> cityIndex;//un hashmap pentru rapiditatea gasirii indicelui
         int numberOfCities;
-        int findIndex(const string cityName);//de verificat daca se mosteneste 
+        int findIndex(const string cityName);
     public:
         void addRoad(const string city1, const string city2,const coordonate a,const coordonate b) override;
         void getDistance(const string city1,const string city2) override;
+        string& getRegionName() override;
         friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
+        
 };
 
 class map{
@@ -57,9 +64,9 @@ class map{
         map(const map &other);
         ~map();
         void operator=(const map &other);
-        void setStrategy(graphStrategy *strategy);
         void setIstream(istream& newIn);
         istream& getIstream();
+        int getIndexOfRegion(const string& regionName);
         void newRegion();
         void readRoad();
         void respondQuerie();
@@ -74,7 +81,7 @@ class map{
 // in harta->readRoads() se citesc oras coord oras coord regiune
 /*------------------Definirea functiilor pentru clasa unorientedGraphStrategy-------------------*/
 
-istream& operator>>(istream&in,unorientedGraphStrategy &graph){
+istream& operator>>(istream&in,unorientedGraphStrategy& graph){
     getline(in,graph.regionName);
     in>>graph.numberOfCities;
 
@@ -82,7 +89,10 @@ istream& operator>>(istream&in,unorientedGraphStrategy &graph){
     {
         string city1,city2;
         coordonate a,b;
-        in>>city1>>a>>city2>>b;
+        getline(in,city1);
+        in>>a;
+        getline(in,city2);
+        in>>b;
         graph.addRoad(city1,city2,a,b);
     }
     return in;
@@ -91,18 +101,38 @@ istream& operator>>(istream&in,unorientedGraphStrategy &graph){
 
 /*-----------------------------Definirea functiilor pentru clasa map----------------------------*/
 
-map::map(const map&other){}
+map::map(const map&other){
+    this->regions = new graphStrategy*[10001];
 
-map::~map(){}
+    this->in = other.in;
+    for(int i=1;i<=numberOfRegions;i+=1)
+        *regions[i] = *other.regions[i];
+}
 
-void map::operator=(const map &other){}
+void map::operator=(const map &other){
+    this->in = other.in;
+    for(int i=1;i<=numberOfRegions;i+=1)
+        *regions[i] = *other.regions[i];
+}
+
+istream& map::getIstream(){
+    return *this->in;
+}
+
+map::~map(){
+    delete[] regions;
+}
 
 void map::setIstream(istream& newIn){
     this->in = &newIn;
 }
 
-istream& map::getIstream(){
-    return *this->in;
+
+int map::getIndexOfRegion(const string& regionName){
+    for(int i=1;i<=numberOfRegions;i+=1)
+        if(regions[i]->getRegionName() == regionName)
+            return i;
+    throw RegionNotFoundException(regionName);
 }
 
 void map::newRegion(){
@@ -120,23 +150,52 @@ void map::newRegion(){
             *in >> *(static_cast<unorientedGraphStrategy*>(regions[++numberOfRegions]));
             break;
         case 2:
-            
             break;
         case 3:
-            
             break;
         case 4:
-            ;
             break;
         case 5:
-            
             break;
         default:
             break;
     }
 }
 
-void map::respondQuerie(){}
+void map::readRoad(){
+    string city1,city2;
+    coordonate a,b;
+    string regionName;
+    getline(*in,regionName);
+    getline(*in,city1);
+    *in>>a;
+    getline(*in,city2);
+    *in>>b;
+
+    try{
+        const int regionIndex = getIndexOfRegion(regionName);
+        regions[regionIndex]->addRoad(city1,city2,a,b);
+
+    } catch (const RegionNotFoundException& e){
+        cerr << "Eroare: " << e.what() << std::endl;
+    }
+}
+
+void map::respondQuerie(){
+    string city1,city2;
+    string regionName;
+    getline(*in,regionName);
+    getline(*in,city1);
+    getline(*in,city2);
+
+    try{
+        const int regionIndex = getIndexOfRegion(regionName);
+        regions[regionIndex]->getDistance(city1,city2);
+
+    } catch (const RegionNotFoundException& e){
+        cerr << "Eroare: " << e.what() << std::endl;
+    }
+}
 
 /*----------------------------------Main si functiile aferente-----------------------------------*/
     
