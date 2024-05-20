@@ -47,6 +47,7 @@ class unorientedGraphStrategy: public graphStrategy{
         int numberOfCities;
         int findIndex(const string cityName);
     public:
+        unorientedGraphStrategy();
         void addRoad(const string city1, const string city2,const coordonate a,const coordonate b) override;
         void getDistance(const string city1,const string city2) override;
         string& getRegionName() override;
@@ -73,13 +74,43 @@ class map{
         
         
 };
-//citim operatia
-//1 --> harta->readCity();
-//2 --> harta->readRoads();
-//3 --> harta->respondQueries();
-// in harta->readCity() se citeste numele si tipul de graf
-// in harta->readRoads() se citesc oras coord oras coord regiune
-/*------------------Definirea functiilor pentru clasa unorientedGraphStrategy-------------------*/
+
+
+/*-------------------------Definirea functiilor pentru clasa coordonate--------------------------*/
+
+coordonate::coordonate(){
+    this->x = new double;
+    this->y = new double;
+}
+
+coordonate::coordonate(const coordonate &other){
+    this->x = new double;
+    this->y = new double;
+    *this->x = *other.x;
+    *this->y = *other.y;
+}
+void coordonate::operator=(const coordonate &other){
+    *this->x = *other.x;
+    *this->y = *other.y;
+}
+
+double coordonate::operator-(const coordonate &other) const{
+    double dx = *this->x - *other.x;
+    double dy = *this->y - *other.y;
+    return sqrt(dx*dx + dy*dy);
+}
+
+istream& operator>>(istream &in, coordonate &c){
+    in>>*c.x>>*c.y;
+    return in;
+}
+
+coordonate::~coordonate(){
+    delete x;
+    delete y;
+}
+
+/*------------------Definirea functiilor pentru clasa unorientedGraphStrategy--------------------*/
 
 istream& operator>>(istream&in,unorientedGraphStrategy& graph){
     getline(in,graph.regionName);
@@ -99,6 +130,98 @@ istream& operator>>(istream&in,unorientedGraphStrategy& graph){
 }
 
 
+unorientedGraphStrategy::unorientedGraphStrategy(){}
+
+string& unorientedGraphStrategy::getRegionName(){
+    return this->regionName;
+}
+
+int unorientedGraphStrategy::findIndex(string cityName){
+    if(cityIndex.count(cityName))
+        return cityIndex[cityName];
+    else
+        return -1;
+
+    /*Alternativa fara hash map*/
+    // auto it = find(this->citiesName.begin(), this->citiesName.end(), cityName);
+    // if (it != this->citiesName.end()) {
+    //     return distance(this->citiesName.begin(), it);
+    // }
+    // return -1;
+}
+
+void unorientedGraphStrategy::addRoad(string city1, string city2,coordonate a,coordonate b){
+    int city1Index = findIndex(city1);
+    int city2Index = findIndex(city2);
+
+    double distance = a - b;//oprator supraincarcat
+
+    if(city1Index == -1)
+    {
+        this->citiesName.push_back(city1);
+        city1Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city1,city1Index));
+    }
+    if(city2Index == -1)
+    {
+        this->citiesName.push_back(city2);
+        city2Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city2,city2Index));
+    }
+
+    this->graf.resize(this->numberOfCities);// segf daca nu ii dam resize
+
+    this->graf[city1Index].emplace_back(make_pair(distance, city2Index));
+    this->graf[city2Index].emplace_back(make_pair(distance, city1Index));
+}
+
+void unorientedGraphStrategy::getDistance(string city1, string city2){
+    const int dimension = (this->numberOfCities+1);
+    double d[dimension];
+    const int INF=1e9;
+    priority_queue<pair<double,int>> heap;
+    bool viz[dimension]={};
+
+    int start = this->findIndex(city1);
+    int destination =this->findIndex(city2);
+
+    int x,y,n=this->numberOfCities;
+    double c;
+
+    for(int i=1;i<=dimension;i+=1)
+        d[i]=INF;
+
+    d[start]=0;
+    heap.push({-0,start});//'-' e pentru min heap
+    while (!heap.empty())
+    {
+        x=heap.top().second;
+        heap.pop();
+        if(!viz[x])
+        {
+            viz[x]=true;
+            for(auto i:this->graf[x])
+            {
+                c=i.first;
+                y=i.second;
+                if(d[y]>d[x]+c)
+                    d[y]=d[x]+c,heap.push({-d[y],y});
+            }
+        }
+    }
+    
+    cout << "\033[A\033[2K\n";
+
+    system("clear");
+
+    if (d[destination]<0)
+            cout<<"There is no road between the 2 cities!\n";
+        else
+            cout<<"The minimum distance between these two cities is "<<d[destination]<<'\n';
+    
+}
 /*-----------------------------Definirea functiilor pentru clasa map----------------------------*/
 
 map::map(const map&other){
@@ -147,7 +270,7 @@ void map::newRegion(){
     switch (opNum)
     {
         case 1: 
-            *in >> *(static_cast<unorientedGraphStrategy*>(regions[++numberOfRegions]));
+            *in >> *(dynamic_cast<unorientedGraphStrategy*>(regions[++numberOfRegions]));
             break;
         case 2:
             break;
