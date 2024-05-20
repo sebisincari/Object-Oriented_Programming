@@ -96,6 +96,38 @@ class lineGraphStrategy: public graphStrategy{
         friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
 };
 
+class orientedGraphStrategy: public graphStrategy{
+    private:
+        vector<vector<pair<double,int>>> graf;
+        string regionName;
+        vector<string> citiesName;
+        unordered_map<string,int> cityIndex;//un hashmap pentru rapiditatea gasirii indicelui
+        int numberOfCities;
+        int findIndex(string cityName);
+    public:
+        void addRoad(string city1, string city2, coordonate a, coordonate b) override;
+        void getDistance(string city1, string city2) override;
+        string& getRegionName() override;
+        void setRegionName(const string& newName);
+        friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
+};
+
+class completeGraphStrategy{
+    private:
+        vector<coordonate> coordCities;
+        string regionName;
+        vector<string> citiesName;
+        unordered_map<string,int> cityIndex;//un hashmap pentru rapiditatea gasirii indicelui
+        int numberOfCities;
+        int findIndex(string cityName);
+    public:
+        void addRoad(string city, coordonate a);
+        void getDistance(string city1, string city2);
+        string& getRegionName();
+        void setRegionName(const string& newName);
+        friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
+};
+
 class map{
     private:
         graphStrategy **regions;
@@ -412,7 +444,7 @@ istream& operator>>(istream&in,lineGraphStrategy& graph){
     {
         string city1,city2;
         coordonate a,b;
-        in.ignore(numeric_limits<streamsize>::max(), '\n');
+        in.ignore(numeric_limits<streamsize>::max(), '\ n');
 
         getline(in,city1);
         in>>a;
@@ -433,7 +465,7 @@ string& lineGraphStrategy::getRegionName(){
     return this->regionName;
 }
 
-int unorientedGraphStrategy::findIndex(string cityName){
+int lineGraphStrategy::findIndex(string cityName){
     if(cityIndex.count(cityName))
         return cityIndex[cityName];
     else
@@ -523,6 +555,191 @@ void lineGraphStrategy::getDistance(string city1, string city2)
     
 }
 
+/*---------------------Definirea functiilor pentru clasa orientedGraphStrategy-------------------*/
+
+istream& operator>>(istream&in,orientedGraphStrategy& graph){
+    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    string aux;
+    getline(in,aux);
+    graph.setRegionName(aux);
+    int numberOfRoads;
+    in>>numberOfRoads;
+    
+    for(int i=1;i<=numberOfRoads;i+=1)
+    {
+        string city1,city2;
+        coordonate a,b;
+        in.ignore(numeric_limits<streamsize>::max(), '\ n');
+
+        getline(in,city1);
+        in>>a;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(in,city2);
+        in>>b;
+        graph.addRoad(city1,city2,a,b);
+    }
+    return in;
+}
+
+void orientedGraphStrategy::setRegionName(const string& name){
+        this->regionName = name;
+    }
+
+string& orientedGraphStrategy::getRegionName(){
+    return this->regionName;
+}
+
+int orientedGraphStrategy::findIndex(string cityName){
+    if(cityIndex.count(cityName))
+        return cityIndex[cityName];
+    else
+        return -1;
+}
+
+void orientedGraphStrategy::addRoad(string city1, string city2, coordonate a, coordonate b)
+{
+    int city1Index = findIndex(city1);
+    int city2Index = findIndex(city2);
+
+    double distance = a - b;//oprator supraincarcat
+
+    if(city1Index == -1)
+    {
+        this->citiesName.push_back(city1);
+        city1Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city1,city1Index));
+    }
+    if(city2Index == -1)
+    {
+        this->citiesName.push_back(city2);
+        city2Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city2,city2Index));
+    }
+
+    this->graf.resize(this->numberOfCities);// segf daca nu ii dam resize
+
+    this->graf[city1Index].emplace_back(make_pair(distance, city2Index));
+}
+
+void orientedGraphStrategy::getDistance(string city1, string city2)
+{
+    const int dimension = (this->numberOfCities+1);
+    double d[dimension];
+    const int INF=1e9;
+    priority_queue<pair<double,int>> heap;
+    bool viz[dimension]={};
+
+    int start = this->findIndex(city1);
+    int destination =this->findIndex(city2);
+
+    int x,y,n=this->numberOfCities;
+    double c;
+
+    for(int i=1;i<=dimension;i+=1)
+        d[i]=INF;
+
+    d[start]=0;
+    heap.push({-0,start});//'-' e pentru min heap
+    while (!heap.empty())
+    {
+        x=heap.top().second;
+        heap.pop();
+        if(!viz[x])
+        {
+            viz[x]=true;
+            for(auto i:this->graf[x])
+            {
+                c=i.first;
+                y=i.second;
+                if(d[y]>d[x]+c)
+                    d[y]=d[x]+c,heap.push({-d[y],y});
+            }
+        }
+    }
+    
+    cout << "\033[A\033[2K\n";
+
+    system("clear");
+
+    if (d[destination]<0)
+            cout<<"There is no road between the 2 cities!\n";
+        else
+            cout<<"The minimum distance between these two cities is "<<d[destination]<<'\n';
+    
+}
+
+/*----------------Definirea functiilor pentru clasa completeGraphStrategy-----------------------*/
+
+istream& operator>>(istream&in,completeGraphStrategy& graph){
+    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    string aux;
+    getline(in,aux);
+    graph.setRegionName(aux);
+    int numberOfRoads;
+    in>>numberOfRoads;
+    
+    for(int i=1;i<=numberOfRoads;i+=1)
+    {
+        string city;
+        coordonate a;
+        in.ignore(numeric_limits<streamsize>::max(), '\ n');
+
+        getline(in,city);
+        in>>a;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        graph.addRoad(city,a);
+    }
+    return in;
+}
+
+void orientedGraphStrategy::setRegionName(const string& name){
+        this->regionName = name;
+    }
+
+string& orientedGraphStrategy::getRegionName(){
+    return this->regionName;
+}
+
+int orientedGraphStrategy::findIndex(string cityName){
+    if(cityIndex.count(cityName))
+        return cityIndex[cityName];
+    else
+        return -1;
+}
+
+void completeGraphStrategy::addRoad(string city1, coordonate a)
+{
+    int city1Index = this->findIndex(city1);
+
+    if(city1Index == -1)
+    {
+        this->citiesName.push_back(city1);
+        city1Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city1,city1Index));
+        this->coordCities.push_back(a);
+    }
+}
+
+void completeGraphStrategy::getDistance(string city1, string city2)
+{
+    int city1Index = this->findIndex(city1);
+    int city2Index = this->findIndex(city2);
+    coordonate a = this->coordCities[city1Index];;
+    coordonate b = this->coordCities[city2Index];
+    double distance = a - b;
+
+    cout << "\033[A\033[2K\n";
+    system("clear");
+    cout<<"The minimum distance between these two cities is "<<distance<<'\n';
+}
+
 /*-----------------------------Definirea functiilor pentru clasa map-----------------------------*/
 
 map::map(const map&other){
@@ -583,8 +800,10 @@ void map::newRegion(){
             regions[++numberOfRegions] = new lineGraphStrategy;
             *in>>*static_cast<lineGraphStrategy*>(regions[numberOfRegions]);
             break;
-        // case 4:
-        //     break;
+        case 4:
+            regions[++numberOfRegions] = new orientedGraphStrategy;
+            *in>>*static_cast<orientedGraphStrategy*>(regions[numberOfRegions]);
+            break;
         // case 5:
         //     break;
         // default:
