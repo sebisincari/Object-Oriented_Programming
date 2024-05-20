@@ -74,6 +74,28 @@ class treeStrategy: public graphStrategy{
         friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
 };
 
+class lineGraphStrategy: public graphStrategy{
+    private:
+        string regionName;
+        vector<string> citiesName;
+        unordered_map<string,int> cityIndex;//un hashmap pentru rapiditatea gasirii indicelui
+        int numberOfCities;
+        int findIndex(string cityName);
+        vector<vector<pair<double,int>>> graf;
+        vector<double> partialSum;
+        unordered_map<string,int> indexInLine;
+        vector<int> line;
+        vector<bool> viz;
+        void dfs(int i);
+        void constructPartialSum();
+    public:
+        void addRoad(string city1, string city2, coordonate a, coordonate b) override;
+        void getDistance(string city1, string city2) override;
+        string& getRegionName() override;
+        void setRegionName(const string& newName);
+        friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
+};
+
 class map{
     private:
         graphStrategy **regions;
@@ -375,6 +397,132 @@ void treeStrategy::getDistance(string city1, string city2){
     cout<<"The minimum distance between these two cities is "<<distance<<'\n';
 }
 
+/*--------------------Definirea functiilor pentru clasa lineGraphStrategy------------------------*/
+
+istream& operator>>(istream&in,lineGraphStrategy& graph){
+    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    string aux;
+    getline(in,aux);
+    graph.setRegionName(aux);
+    int numberOfRoads;
+    in>>numberOfRoads;
+    
+    for(int i=1;i<=numberOfRoads;i+=1)
+    {
+        string city1,city2;
+        coordonate a,b;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(in,city1);
+        in>>a;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(in,city2);
+        in>>b;
+        graph.addRoad(city1,city2,a,b);
+    }
+    return in;
+}
+
+void lineGraphStrategy::setRegionName(const string& name){
+        this->regionName = name;
+    }
+
+string& lineGraphStrategy::getRegionName(){
+    return this->regionName;
+}
+
+int unorientedGraphStrategy::findIndex(string cityName){
+    if(cityIndex.count(cityName))
+        return cityIndex[cityName];
+    else
+        return -1;
+}
+
+void lineGraphStrategy::dfs(int i)
+{
+    this->viz[i]=true;
+    this->line.push_back(i);
+    this->indexInLine.insert(pair<string,int>(this->citiesName[i],this->line.size()-1));
+    for(auto j:this->graf[i])
+        if(!this->viz[j.second])
+        {
+            this->partialSum[j.second]=this->partialSum[i]+j.first;
+            dfs(j.second);
+        }
+            
+}
+
+void lineGraphStrategy::constructPartialSum()
+{
+    this->viz.clear();
+    this->viz.resize(this->numberOfCities);
+    this->line.clear();
+    this->indexInLine.clear();
+    
+    int start = -1;
+    for(auto i : this->graf)
+    {
+        start+=1;
+        if(i.size() == 1)
+            break;
+    }
+    dfs(start);
+}
+
+void lineGraphStrategy::addRoad(string city1, string city2, coordonate a, coordonate b)
+{
+    int city1Index = this->findIndex(city1);
+    int city2Index = this->findIndex(city2);
+
+    double distance = a - b;//oprator supraincarcat
+
+    if(city1Index == -1)
+    {
+        this->citiesName.push_back(city1);
+        city1Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city1,city1Index));
+    }
+    if(city2Index == -1)
+    {
+        this->citiesName.push_back(city2);
+        city2Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city2,city2Index));
+    }
+
+    this->graf.resize(this->numberOfCities);// segf daca nu ii dam resize
+    this->partialSum.resize(this->numberOfCities);
+
+    this->graf[city1Index].emplace_back(make_pair(distance, city2Index));
+    this->graf[city2Index].emplace_back(make_pair(distance, city1Index));
+
+    constructPartialSum();
+
+}
+
+void lineGraphStrategy::getDistance(string city1, string city2)
+{
+    int city1Index = this->findIndex(city1);
+    int city2Index = this->findIndex(city2);
+
+    if(this->viz[this->indexInLine[city1]] and this->viz[this->indexInLine[city2]])
+    {
+        cout << "\033[A\033[2K\n";
+        system("clear");
+        cout<<"The minimum distance between these two cities is "<<abs(this->partialSum[this->indexInLine[city1]]-this->partialSum[this->indexInLine[city2]])<<'\n';
+    }
+    else
+    {
+        cout << "\033[A\033[2K\n";
+        system("clear");
+        cout<<"There is no road between the 2 cities!\n";
+    }
+    
+}
+
 /*-----------------------------Definirea functiilor pentru clasa map-----------------------------*/
 
 map::map(const map&other){
@@ -431,8 +579,10 @@ void map::newRegion(){
             regions[++numberOfRegions] = new treeStrategy;
             *in>>*static_cast<treeStrategy*>(regions[numberOfRegions]);
             break;
-        // case 3:
-        //     break;
+        case 3:
+            regions[++numberOfRegions] = new lineGraphStrategy;
+            *in>>*static_cast<lineGraphStrategy*>(regions[numberOfRegions]);
+            break;
         // case 4:
         //     break;
         // case 5:
