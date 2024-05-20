@@ -21,6 +21,7 @@ class coordonate
         coordonate(const coordonate &other);
         void operator=(const coordonate &other);
         double operator-(const coordonate &other) const;
+        friend istream& operator>>(istream &in, coordonate &c);
         ~coordonate();
 };
 
@@ -43,22 +44,23 @@ class unorientedGraphStrategy: public graphStrategy{
     public:
         void addRoad(const string city1, const string city2,const coordonate a,const coordonate b) override;
         void getDistance(const string city1,const string city2) override;
-        friend istream& operator>>(istream &in, coordonate &c);
+        friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
 };
 
 class map{
     private:
-        graphStrategy **strategy;
+        graphStrategy **regions;
         istream *in;
+        int numberOfRegions;
     public:
-        map(graphStrategy **strategy) : strategy(strategy) {}
+        map(graphStrategy **strategy) : regions(strategy) { numberOfRegions = 0; }
         map(const map &other);
         ~map();
         void operator=(const map &other);
         void setStrategy(graphStrategy *strategy);
         void setIstream(istream& newIn);
         istream& getIstream();
-        void readRegion();
+        void newRegion();
         void readRoad();
         void respondQuerie();
         
@@ -70,6 +72,23 @@ class map{
 //3 --> harta->respondQueries();
 // in harta->readCity() se citeste numele si tipul de graf
 // in harta->readRoads() se citesc oras coord oras coord regiune
+/*------------------Definirea functiilor pentru clasa unorientedGraphStrategy-------------------*/
+
+istream& operator>>(istream&in,unorientedGraphStrategy &graph){
+    getline(in,graph.regionName);
+    in>>graph.numberOfCities;
+
+    for(int i=0;i<graph.numberOfCities;i++)
+    {
+        string city1,city2;
+        coordonate a,b;
+        in>>city1>>a>>city2>>b;
+        graph.addRoad(city1,city2,a,b);
+    }
+    return in;
+}
+
+
 /*-----------------------------Definirea functiilor pentru clasa map----------------------------*/
 
 map::map(const map&other){}
@@ -84,6 +103,37 @@ void map::setIstream(istream& newIn){
 
 istream& map::getIstream(){
     return *this->in;
+}
+
+void map::newRegion(){
+    int opNum;
+    cout<<"Choose the type of region you want to add: \n";
+    cout<<"1 -> Graph\n";
+    cout<<"2 -> Tree\n";
+    cout<<"3 -> Complete Graph\n";
+    cout<<"4 -> Line Graph\n";
+    cout<<"5 -> Oriented Graph\n";
+    *in>>opNum;
+    switch (opNum)
+    {
+        case 1: 
+            *in >> *(static_cast<unorientedGraphStrategy*>(regions[++numberOfRegions]));
+            break;
+        case 2:
+            
+            break;
+        case 3:
+            
+            break;
+        case 4:
+            ;
+            break;
+        case 5:
+            
+            break;
+        default:
+            break;
+    }
 }
 
 void map::respondQuerie(){}
@@ -122,7 +172,7 @@ void interface(istream &in, map &harta){
         switch (opNum)
         {
         case 1:
-            harta.readRegion();
+            harta.newRegion();
             break;
         case 2:
             harta.readRoad();
@@ -159,3 +209,4 @@ int main(){
     fin.close();
     return 0;
 }
+//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
