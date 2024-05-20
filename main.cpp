@@ -52,8 +52,26 @@ class unorientedGraphStrategy: public graphStrategy{
         void addRoad(const string city1, const string city2,const coordonate a,const coordonate b) override;
         void getDistance(const string city1,const string city2) override;
         string& getRegionName() override;
+
         friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
         
+};
+
+class treeStrategy: public graphStrategy{
+    private:
+        string regionName;
+        vector<string> citiesName;
+        unordered_map<string,int> cityIndex;//un hashmap pentru rapiditatea gasirii indicelui
+        int numberOfCities;
+        int findIndex(string cityName);
+        vector<int> parent;//vector de tati
+        vector<double> distanta;//vector de distanta de la fiu la tata
+    public:
+        void addRoad(string city1, string city2, coordonate a, coordonate b) override;
+        void getDistance(string city1, string city2) override;
+        string& getRegionName() override;
+        void setRegionName(const string& newName);
+        friend istream& operator>>(istream &in, unorientedGraphStrategy &c);
 };
 
 class map{
@@ -133,7 +151,6 @@ istream& operator>>(istream&in,unorientedGraphStrategy& graph){
 
         getline(in,city2);
         in>>b;
-        cout<<"aici\n";
         graph.addRoad(city1,city2,a,b);
     }
     return in;
@@ -233,7 +250,132 @@ void unorientedGraphStrategy::getDistance(string city1, string city2){
             cout<<"The minimum distance between these two cities is "<<d[destination]<<'\n';
     
 }
-/*-----------------------------Definirea functiilor pentru clasa map----------------------------*/
+
+/*-----------------------Definirea functiilor pentru clasa treeStrategy--------------------------*/
+
+string& treeStrategy::getRegionName(){
+    return this->regionName;
+}
+
+void treeStrategy::setRegionName(const string& name){
+        this->regionName = name;
+    }
+
+istream& operator>>(istream&in,treeStrategy& graph){
+    in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+    string aux;
+    getline(in,aux);
+    graph.setRegionName(aux);
+    
+    int numberOfRoads;
+    in>>numberOfRoads;
+    
+    for(int i=1;i<=numberOfRoads;i+=1)
+    {
+        string city1,city2;
+        coordonate a,b;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(in,city1);
+        in>>a;
+        in.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        getline(in,city2);
+        in>>b;
+        graph.addRoad(city1,city2,a,b);
+    }
+    return in;
+}
+
+int treeStrategy::findIndex(string cityName){
+    if(cityIndex.count(cityName))
+        return cityIndex[cityName];
+    else
+        return -1;
+}
+
+void treeStrategy::addRoad(string city1, string city2, coordonate a, coordonate b){
+    int city1Index = this->findIndex(city1);
+    int city2Index = this->findIndex(city2);
+
+    double distance = a - b;
+
+    if(city1Index == -1)
+    {
+        this->citiesName.push_back(city1);
+        city1Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city1,city1Index));
+    }
+    if(city2Index == -1)
+    {
+        this->citiesName.push_back(city2);
+        city2Index = this->citiesName.size()-1;
+        this->numberOfCities+=1;
+        this->cityIndex.insert(pair<string,int>(city2,city2Index));
+    }
+
+    this->parent.resize(this->numberOfCities+1);// segf daca nu ii dam resize
+    this->distanta.resize(this->numberOfCities+1);//elementele noi sunt 0 by default
+
+    city1Index+=1;
+    city2Index+=1;
+
+    if (city2Index <this->numberOfCities)//este deja in vector
+        swap(city1Index,city2Index);
+
+    this->parent[city2Index] = city1Index;
+    this->distanta[city2Index] = distance;
+}
+
+void treeStrategy::getDistance(string city1, string city2){
+    int city1Index = this->findIndex(city1);
+    int city2Index = this->findIndex(city2);
+    int x = city1Index+1;
+    int y = city2Index+1;
+    double distance = 0;
+    const int num = this->numberOfCities+5;
+    bool viz[num]={};
+
+    while(this->parent[x]!=0)
+    {
+        viz[x]=true;        
+        distance+=this->distanta[x];
+        x=this->parent[x];
+    }
+    //nodul x e radacina
+
+    while(this->parent[y]!=0 and !viz[y])
+    {
+        viz[y]=true;
+        distance+=this->distanta[y];
+        y=this->parent[y];
+    }
+    //nodul y se afla la intersectie
+
+    if(this->parent[y]==0 and this->parent[x]==0 and x!=y)
+    {
+        cout << "\033[A\033[2K\n";
+        system("clear");
+        cout<<"There is no road between the 2 cities!\n";
+        return;
+    }
+
+    while(this->parent[y]!=0)
+    {
+        distance-=this->distanta[y];
+        y=this->parent[y];
+    }
+    //scadem surplusul de la intersectie pana la radacina
+
+
+    cout << "\033[A\033[2K\n";
+    system("clear");
+    cout<<"The minimum distance between these two cities is "<<distance<<'\n';
+}
+
+/*-----------------------------Definirea functiilor pentru clasa map-----------------------------*/
 
 map::map(const map&other){
     this->regions = new graphStrategy*[10001];
@@ -278,17 +420,17 @@ void map::newRegion(){
     cout<<"4 -> Line Graph\n";
     cout<<"5 -> Oriented Graph\n";
     *in>>opNum;
+    cout<<"Introduce the entire region: [region name, number of roads and the roads]\n";
     switch (opNum)
     {
         case 1: 
-            numberOfRegions+=1;
-            cout<<"Introduce the entire region: [region name, number of roads and the roads]\n";
-            regions[numberOfRegions] = new unorientedGraphStrategy();
+            regions[++numberOfRegions] = new unorientedGraphStrategy;
             *in>>*static_cast<unorientedGraphStrategy*>(regions[numberOfRegions]);
-            //regions[numberOfRegions] = newRegion;
             break;
-        // case 2:
-        //     break;
+        case 2:
+            regions[++numberOfRegions] = new treeStrategy;
+            *in>>*static_cast<treeStrategy*>(regions[numberOfRegions]);
+            break;
         // case 3:
         //     break;
         // case 4:
@@ -304,9 +446,11 @@ void map::readRoad(){
     string city1,city2;
     coordonate a,b;
     string regionName;
+    (*in).ignore(numeric_limits<streamsize>::max(), '\n');
     getline(*in,regionName);
     getline(*in,city1);
     *in>>a;
+    (*in).ignore(numeric_limits<streamsize>::max(), '\n');
     getline(*in,city2);
     *in>>b;
 
@@ -322,7 +466,7 @@ void map::readRoad(){
 void map::respondQuerie(){
     string city1,city2;
     string regionName;
-    (*in).ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    (*in).ignore(numeric_limits<streamsize>::max(), '\n');
     getline(*in,regionName);
     getline(*in,city1);
     getline(*in,city2);
