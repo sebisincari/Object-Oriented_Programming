@@ -7,6 +7,7 @@
 #include<cmath>
 #include<queue>
 #include<unordered_map>
+#include<typeinfo>
 using namespace std;
 
 /*--------------------------------------Definirea claselor---------------------------------------*/
@@ -113,24 +114,33 @@ coordonate::~coordonate(){
 /*------------------Definirea functiilor pentru clasa unorientedGraphStrategy--------------------*/
 
 istream& operator>>(istream&in,unorientedGraphStrategy& graph){
-    getline(in,graph.regionName);
-    in>>graph.numberOfCities;
+    in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    for(int i=0;i<graph.numberOfCities;i++)
+   
+    getline(in,graph.regionName);
+    int numberOfRoads;
+    in>>numberOfRoads;
+    
+    for(int i=1;i<=numberOfRoads;i+=1)
     {
         string city1,city2;
         coordonate a,b;
+        in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
         getline(in,city1);
         in>>a;
+        in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
         getline(in,city2);
         in>>b;
+        cout<<"aici\n";
         graph.addRoad(city1,city2,a,b);
     }
     return in;
 }
 
 
-unorientedGraphStrategy::unorientedGraphStrategy(){}
+unorientedGraphStrategy::unorientedGraphStrategy(){numberOfCities=0;}
 
 string& unorientedGraphStrategy::getRegionName(){
     return this->regionName;
@@ -175,6 +185,7 @@ void unorientedGraphStrategy::addRoad(string city1, string city2,coordonate a,co
 
     this->graf[city1Index].emplace_back(make_pair(distance, city2Index));
     this->graf[city2Index].emplace_back(make_pair(distance, city1Index));
+    
 }
 
 void unorientedGraphStrategy::getDistance(string city1, string city2){
@@ -270,18 +281,22 @@ void map::newRegion(){
     switch (opNum)
     {
         case 1: 
-            *in >> *(dynamic_cast<unorientedGraphStrategy*>(regions[++numberOfRegions]));
+            numberOfRegions+=1;
+            cout<<"Introduce the entire region: [region name, number of roads and the roads]\n";
+            regions[numberOfRegions] = new unorientedGraphStrategy();
+            *in>>*static_cast<unorientedGraphStrategy*>(regions[numberOfRegions]);
+            //regions[numberOfRegions] = newRegion;
             break;
-        case 2:
-            break;
-        case 3:
-            break;
-        case 4:
-            break;
-        case 5:
-            break;
-        default:
-            break;
+        // case 2:
+        //     break;
+        // case 3:
+        //     break;
+        // case 4:
+        //     break;
+        // case 5:
+        //     break;
+        // default:
+        //     break;
     }
 }
 
@@ -307,6 +322,7 @@ void map::readRoad(){
 void map::respondQuerie(){
     string city1,city2;
     string regionName;
+    (*in).ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     getline(*in,regionName);
     getline(*in,city1);
     getline(*in,city2);
@@ -379,7 +395,7 @@ int main(){
     graphStrategy **graph_strategy = new graphStrategy*[10001];
     map harta(graph_strategy);
     
-    ifstream fin("input.txt");
+    ifstream fin("unoriented_graph.txt");
     
     if(inputType())
         harta.setIstream(cin);
