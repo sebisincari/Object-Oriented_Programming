@@ -693,7 +693,7 @@ istream& operator>>(istream&in,completeGraphStrategy& graph){
 
         getline(in,city);
         in>>a;
-        in.ignore(numeric_limits<streamsize>::max(), '\n');
+        //in.ignore(numeric_limits<streamsize>::max(), '\n');
 
         graph.addRoad(city,a);
     }
@@ -783,9 +783,9 @@ void map::newRegion(){
     cout<<"Choose the type of region you want to add: \n";
     cout<<"1 -> Graph\n";
     cout<<"2 -> Tree\n";
-    cout<<"3 -> Complete Graph\n";
-    cout<<"4 -> Line Graph\n";
-    cout<<"5 -> Oriented Graph\n";
+    cout<<"3 -> Line Graph\n";
+    cout<<"4 -> Oriented Graph\n";
+    cout<<"5 -> Complete Graph\n";
     *in>>opNum;
     cout<<"Introduce the entire region: [region name, number of roads and the roads]\n";
     switch (opNum)
@@ -806,10 +806,12 @@ void map::newRegion(){
             regions[++numberOfRegions] = new orientedGraphStrategy;
             *in>>*static_cast<orientedGraphStrategy*>(regions[numberOfRegions]);
             break;
-        // case 5:
-        //     break;
-        // default:
-        //     break;
+        case 5:
+            regions[++numberOfRegions] = new completeGraphStrategy;
+            *in>>*static_cast<completeGraphStrategy*>(regions[numberOfRegions]);
+            break;
+        default:
+            break;
     }
 }
 
@@ -925,7 +927,7 @@ int main(){
     graphStrategy **graph_strategy = new graphStrategy*[10001];
     map harta(graph_strategy);
     
-    ifstream fin("tree.txt");
+    ifstream fin("oriented_graph.txt");
     
     if(inputType())
         harta.setIstream(cin);
@@ -938,4 +940,3 @@ int main(){
     fin.close();
     return 0;
 }
-//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
