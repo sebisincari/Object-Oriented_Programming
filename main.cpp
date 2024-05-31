@@ -844,6 +844,11 @@ void map::readRoad(){
 
     } catch (const RegionNotFoundException& e){
         cerr << "Eroare: " << e.what() << std::endl;
+        cout<<"Create region?/n";
+        bool createRegion;
+        *in>>createRegion;
+        if(createRegion)
+            newRegion();
     }
 }
 
@@ -865,6 +870,11 @@ void map::respondQuerie(){
 
     } catch (const RegionNotFoundException& e){
         cerr << "Eroare: " << e.what() << std::endl;
+        cout<<"Create region?/n";
+        bool createRegion;
+        *in>>createRegion;
+        if(createRegion)
+            newRegion();
     }
 }
 
