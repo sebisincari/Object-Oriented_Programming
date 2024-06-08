@@ -1,4 +1,4 @@
-#Harti
+# Harti
 ### Cerinta:
  O firma de software a primit cerinta de a scrie o aplicatie care determina drumul
 minim intre doua orase alese dintr-o regiune, folosind sistemul de strazi existent.
@@ -10,14 +10,14 @@ servere, tinand datele pentru o serie de regiuni, pentru care primeste cereri de
 (drum minim de la A la B regiunea R; introduce drum intre A si B in regiunea R; creaza o
 regiune). Algoritmul trebuie sa ruleze cat de cat rapid avand in vedere tipul de graf
 asociat.
-Precizari:
+Precizari:<br/>
 
-   Drumul minim returnat consta doar in distanta totala de parcurs.
+   Drumul minim returnat consta doar in distanta totala de parcurs.<br/>
    Observatii: Intr-un graf complet drumul minim de la A la B este fix strada
 AB. Intr-un arbore exista un singur drum intre doua noduri (care se poate
 calcula tinand cont de stramosul comun). Intr-un graf linie costul
-drumului minim se poate calcula in O(1) usor.
-   Strazile sunt bidirectionale, mai putin in dag.
+drumului minim se poate calcula in O(1) usor.<br/>
+   Strazile sunt bidirectionale, mai putin in dag.<br/>
   
 ## Acest proiect are 3 abordari de codare
 ### 1.Abordare non OOP
